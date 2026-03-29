@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Lunar Vision - Premium 3D Moon Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ffaa44;
+            --primary-glow: rgba(255, 170, 68, 0.6);
+            --bg-glass: rgba(10, 10, 20, 0.65);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --text-main: #f0f0f5;
+            --text-muted: #a0a0b0;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Outfit', sans-serif;
+            background-color: #000;
+            color: var(--text-main);
+        }
+
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(20, 20, 25, 0.45), rgba(5, 5, 10, 0.75));
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        /* Information Panel */
+        .info-panel {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            padding: 20px 24px;
+            width: 320px;
+            pointer-events: auto;
+            z-index: 10;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .info-panel:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 170, 68, 0.3);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 170, 68, 0.1);
+        }
+
+        .title-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .moon-icon {
+            font-size: 24px;
+            filter: drop-shadow(0 0 8px var(--primary-glow));
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #fff, #ffaa44);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 300;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Custom Slider */
+        .control-group {
+            margin-top: 16px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            border-radius: 4px;
+            outline: none;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.3);
+        }
+
+        /* Controls Panel (Buttons) */
+        .controls-panel {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 16px;
+            display: flex;
+            gap: 14px;
+            z-index: 20;
+            pointer-events: auto;
+            border-radius: 30px;
+        }
+
+        button {
+            background: rgba(40, 40, 55, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: rgba(60, 60, 80, 0.8);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .toggle-active {
+            background: rgba(200, 120, 30, 0.2);
+            color: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(255, 170, 68, 0.2) inset;
+        }
+
+        .toggle-active:hover {
+            background: rgba(200, 120, 30, 0.3);
+        }
+
+        /* Loading / Status Text */
+        .status-text {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 400;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: opacity 0.5s ease;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary-glow);
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
+        /* Instructions */
+        .instruction {
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 20px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 300;
+            pointer-events: none;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+            animation: fadeInOut 4s infinite;
+        }
+
+        @keyframes fadeInOut {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Marker Labels styling (Dynamic via script) */
+        .site-label {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            cursor: pointer;
+            pointer-events: auto !important;
+        }
+
+        .site-label:hover {
+            background: rgba(255, 170, 68, 0.2);
+            border-color: rgba(255, 170, 68, 0.8);
+            transform: scale(1.1) !important;
+            z-index: 1000;
+        }
+
+        @media (max-width: 768px) {
+            .info-panel {
+                top: 24px;
+                bottom: auto;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 85%;
+            }
+
+            .info-panel:hover {
+                transform: translateX(-50%) translateY(-2px);
+            }
+
+            .controls-panel {
+                bottom: 24px;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                width: max-content;
+            }
+
+            button {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+
+            .instruction {
+                bottom: 80px;
+                top: auto;
+            }
+
+            .status-text {
+                top: auto;
+                bottom: 120px;
+                right: 50%;
+                transform: translateX(50%);
+            }
+        }
+
+        .vignette-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, transparent 35%, rgba(0, 0, 5, 0.85) 100%);
+            pointer-events: none;
+            z-index: 1;
+            /* Below UI, above 3D canvas */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="vignette-overlay"></div>
+    <!-- Info & Controls Panel -->
+    <div class="info-panel glass-panel">
+        <div class="title-container">
+            <span class="moon-icon">🎑</span>
+            <div class="title">Lunar Vision</div>
+        </div>
+        <div class="subtitle">High-Fidelity Topography & Landing Sites</div>
+
+        <div class="control-group">
+            <div class="control-label">
+                <span>Phase Simulation</span>
+                <span id="phaseValue">Day</span>
+            </div>
+            <input type="range" id="sunSlider" min="0" max="360" value="45">
+        </div>
+    </div>
+
+    <!-- Toggles -->
+    <div class="controls-panel glass-panel">
+        <button id="wireframeBtn">
+            <span style="font-size: 16px;">🔲</span> Wireframe
+        </button>
+        <button id="autoRotateBtn">
+            <span style="font-size: 16px;">🔄</span> Auto-Idle
+        </button>
+    </div>
+
+    <!-- Status -->
+    <div class="status-text glass-panel" id="statusMsg">
+        <div class="status-dot"></div>
+        <span id="statusTxt">Loading high-res textures...</span>
+    </div>
+
+    <!-- Instruction Hint -->
+    <div class="instruction glass-panel">🖱️ Drag to orbit • Scroll to zoom</div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { FilmPass } from 'three/addons/postprocessing/FilmPass.js';
+        import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
+
+        // --- Core Application State ---
+        const config = {
+            moonRadius: 2.0,
+            autoRotateSpeed: 0.55,
+            idleTimeoutMs: 3500
+        };
+
+        // --- Setup Scene, Cameras, Renderers ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000); // Pure space black
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer, more realistic crater shadows
+        renderer.outputEncoding = THREE.sRGBEncoding;     // MASSIVE VISUAL UPGRADE: True-to-life color physics
+
+        // Cinematic tone mapping
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.35; // Brightened perfectly to complement sRGB encoding
+        document.body.appendChild(renderer.domElement);
+
+        // CSS2DRenderer for Labels
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.left = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none'; // let clicks pass through to canvas
+        document.body.appendChild(labelRenderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(5.5, 1.5, 6.5);
+        camera.lookAt(0, 0, 0);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.rotateSpeed = 0.7;
+        controls.zoomSpeed = 1.0;
+        controls.minDistance = 2.5;
+        controls.maxDistance = 15.0;
+        controls.enablePan = false; // Keep moon centered
+        controls.autoRotate = false;
+        controls.autoRotateSpeed = config.autoRotateSpeed;
+
+        // --- Post Processing (Bloom) ---
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.95; // Only extremely bright spots glow (stars, direct reflections)
+        bloomPass.strength = 0.4; // Subtle cinematic glow
+        bloomPass.radius = 0.6;
+
+        // Space Camera Telemetry Grain (Simulates raw NASA sensor feed)
+        const filmPass = new FilmPass(0.35, 0.05, 1024, false);
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+        composer.addPass(filmPass);
+
+        // --- Interface Logic: Idle Timer ---
+        let lastInteractionTime = Date.now();
+        let autoRotateIdleEnabled = true;
+        const autoRotateBtn = document.getElementById('autoRotateBtn');
+
+        const resetIdleTimer = () => {
+            lastInteractionTime = Date.now();
+            if (controls.autoRotate) {
+                controls.autoRotate = false;
+                updateAutoRotateButtonStyle(autoRotateIdleEnabled);
+            }
+        };
+
+        // Event listeners to detect user interaction
+        ['mousedown', 'touchstart', 'wheel', 'keydown'].forEach(evt =>
+            window.addEventListener(evt, resetIdleTimer, { passive: true })
+        );
+        controls.addEventListener('start', resetIdleTimer);
+
+        const updateAutoRotateButtonStyle = (isEnabled) => {
+            if (isEnabled) {
+                autoRotateBtn.classList.remove('toggle-active');
+                autoRotateBtn.innerHTML = '<span style="font-size: 16px;">🔄</span> Auto-Idle';
+            } else {
+                autoRotateBtn.classList.add('toggle-active');
+                autoRotateBtn.innerHTML = '<span style="font-size: 16px;">⏸️</span> Manual';
+            }
+        };
+
+        autoRotateBtn.addEventListener('click', () => {
+            autoRotateIdleEnabled = !autoRotateIdleEnabled;
+            controls.autoRotate = false;
+            resetIdleTimer();
+            updateAutoRotateButtonStyle(autoRotateIdleEnabled);
+        });
+
+        const textureLoader = new THREE.TextureLoader();
+
+        // Lens Flare Textures
+        const textureFlare0 = textureLoader.load('https://threejs.org/examples/textures/lensflare/lensflare0.png');
+        const textureFlare3 = textureLoader.load('https://threejs.org/examples/textures/lensflare/lensflare3.png');
+
+        // High Contrast moon texture
+        const colorMapUrl = 'https://threejs.org/examples/textures/planets/moon_1024.jpg';
+
+        const statusTxt = document.getElementById('statusTxt');
+        const colorMap = textureLoader.load(colorMapUrl, (tex) => {
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); // Maximizes texture sharpness at glancing angles
+            tex.minFilter = THREE.LinearMipmapLinearFilter;
+            tex.generateMipmaps = true;
+            tex.encoding = THREE.sRGBEncoding; // Required for precise texture color mapping
+            statusTxt.textContent = 'High-Res Textures Loaded';
+            setTimeout(() => document.getElementById('statusMsg').style.opacity = '0', 3000);
+        }, undefined, () => {
+            statusTxt.textContent = 'Using procedural fallback';
+            setTimeout(() => document.getElementById('statusMsg').style.opacity = '0', 4000);
+        });
+
+        // --- Procedural Micro-Regolith (Dust) Texture ---
+        // Generates an invisible grit map that adds microscopic sparkling sand texture to lighting when zoomed in
+        const noiseCanvas = document.createElement('canvas');
+        noiseCanvas.width = 512; noiseCanvas.height = 512;
+        const noiseCtx = noiseCanvas.getContext('2d');
+        const imgData = noiseCtx.createImageData(512, 512);
+        for (let i = 0; i < imgData.data.length; i += 4) {
+            const val = 180 + Math.random() * 75; // 180-255 range for high but varied roughness
+            imgData.data[i] = val;
+            imgData.data[i + 1] = val;
+            imgData.data[i + 2] = val;
+            imgData.data[i + 3] = 255;
+        }
+        noiseCtx.putImageData(imgData, 0, 0);
+        const microRegolithMap = new THREE.CanvasTexture(noiseCanvas);
+        microRegolithMap.wrapS = THREE.RepeatWrapping;
+        microRegolithMap.wrapT = THREE.RepeatWrapping;
+        microRegolithMap.repeat.set(80, 80); // Tile the microscopic dust 80 times over the sphere
+        microRegolithMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+        // --- Moon Object ---
+        // Upgraded geometry to massive 512x512 (approx 260,000 polygons) to support physical mountain generation
+        const moonGeo = new THREE.SphereGeometry(config.moonRadius, 512, 512);
+        const moonMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff, // Pure white so texture shows its true gray colors
+            map: colorMap,
+            displacementMap: colorMap, // Physically alters the 3D mesh geometry based on craters
+            displacementScale: 0.025,  // Accurately pushes mountains up and depressed seas down (very subtle to prevent spikes)
+            displacementBias: -0.0125, // Keeps the overall horizon spherical
+            bumpMap: colorMap, // Pixel-level shadow details on top of displacement
+            bumpScale: 0.012,  // Deepens the crater shadows across the terminator line
+            roughnessMap: microRegolithMap, // Applied sand texture for infinite zoom detail
+            roughness: 1.0,
+            metalness: 0.02,   // Ultra-subtle lunar glassy bead reflection (Opposition Effect)
+        });
+
+        const moon = new THREE.Mesh(moonGeo, moonMat);
+        moon.rotation.y = -Math.PI / 2; // Start with the famous "Near Side" facing the camera
+        moon.castShadow = true;
+        moon.receiveShadow = true;
+        scene.add(moon);
+
+        // --- Cinematic Lighting ---
+        // Main Sun (In space, sunlight is stark white, not yellow/orange)
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        sunLight.position.set(10, 2, 10);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 4096; // 4K shadow mapping for incredibly crisp crater rims
+        sunLight.shadow.mapSize.height = 4096;
+        sunLight.shadow.bias = -0.0001;
+
+        // Cinematic Lens Flare
+        const lensflare = new Lensflare();
+        lensflare.addElement(new LensflareElement(textureFlare0, 600, 0, sunLight.color));
+        lensflare.addElement(new LensflareElement(textureFlare3, 60, 0.6));
+        lensflare.addElement(new LensflareElement(textureFlare3, 70, 0.7));
+        lensflare.addElement(new LensflareElement(textureFlare3, 120, 0.9));
+        lensflare.addElement(new LensflareElement(textureFlare3, 70, 1.0));
+        sunLight.add(lensflare);
+        sunLight.shadow.bias = -0.0005;
+        scene.add(sunLight);
+
+        // Ambient space light (Stark contrasting shadows are realistic for the moon)
+        const ambientLight = new THREE.AmbientLight(0x222222, 0.15); // Pure neutral dark shadow
+        scene.add(ambientLight);
+
+        // Earthshine / Fill Light (Extremely soft reflection to reveal details in the dark)
+        const rimLight = new THREE.DirectionalLight(0x333333, 0.4); // Neutral soft fill light
+        rimLight.position.set(-10, 0, -10);
+        scene.add(rimLight);
+
+        // --- Dynamic Starfield (Sharp Stars Only) ---
+        const createStarfield = () => {
+            const starGeo = new THREE.BufferGeometry();
+            const count = 6000;
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+
+            for (let i = 0; i < count; i++) {
+                const r = 300 + Math.random() * 700;
+                const theta = 2 * Math.PI * Math.random();
+                const phi = Math.acos(2 * Math.random() - 1);
+
+                positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+                positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+                positions[i * 3 + 2] = r * Math.cos(phi);
+
+                const mix = Math.random();
+                const color = new THREE.Color();
+                if (mix > 0.8) color.setHex(0xaaccff);
+                else if (mix > 0.3) color.setHex(0xffffff);
+                else color.setHex(0xffddaa);
+
+                color.toArray(colors, i * 3);
+            }
+            starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            starGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const starMat = new THREE.PointsMaterial({
+                size: 1.2, vertexColors: true, transparent: true, opacity: 0.9, sizeAttenuation: true
+            });
+
+            return new THREE.Points(starGeo, starMat);
+        };
+        const stars = createStarfield();
+        scene.add(stars);
+
+        // --- Sun Slider (Moon Phase Simulator) ---
+        const sunSlider = document.getElementById('sunSlider');
+        const phaseValueTxt = document.getElementById('phaseValue');
+
+        const updateSunPosition = () => {
+            const angleDeg = parseFloat(sunSlider.value);
+            const angleRad = (angleDeg * Math.PI) / 180;
+            const distance = 15;
+
+            // Orbit sun around the moon on XZ plane
+            sunLight.position.x = Math.sin(angleRad) * distance;
+            sunLight.position.z = Math.cos(angleRad) * distance;
+
+            // Text feedback
+            if (angleDeg < 45 || angleDeg > 315) phaseValueTxt.textContent = "Full";
+            else if (angleDeg >= 45 && angleDeg < 135) phaseValueTxt.textContent = "Waning";
+            else if (angleDeg >= 135 && angleDeg <= 225) phaseValueTxt.textContent = "New";
+            else phaseValueTxt.textContent = "Waxing";
+        };
+        sunSlider.addEventListener('input', updateSunPosition);
+        updateSunPosition(); // Init
+
+        // --- Apollo Landing Site Markers ---
+        const landingSites = [
+            { id: "A11", name: "Apollo 11", lat: 0.674, lon: 23.473, color: "var(--primary)" },
+            { id: "A15", name: "Apollo 15", lat: 26.132, lon: 3.634, color: "#ff5555" },
+            { id: "A17", name: "Apollo 17", lat: 20.190, lon: 30.768, color: "#ff88ff" },
+            { id: "C4", name: "Chang'e 4", lat: -45.5, lon: 177.6, color: "#88ccff" } // Far side
+        ];
+
+        function latLonToVector3(lat, lon, radius) {
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lon + 90) * (Math.PI / 180); // +90 to align with ThreeJS texture mapping
+            return new THREE.Vector3(
+                -(radius * Math.sin(phi) * Math.cos(theta)),
+                radius * Math.cos(phi),
+                radius * Math.sin(phi) * Math.sin(theta)
+            );
+        }
+
+        const markerGroup = new THREE.Group();
+        moon.add(markerGroup); // Add to moon so they rotate naturally with it
+
+        landingSites.forEach(site => {
+            // Invisible pivot anchor on the surface
+            const pos = latLonToVector3(site.lat, site.lon, config.moonRadius);
+
+            // Create glowing dot (Mesh)
+            const dotMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(site.color).getHex() });
+            const dotGeo = new THREE.SphereGeometry(0.02, 16, 16);
+            const dot = new THREE.Mesh(dotGeo, dotMat);
+            dot.position.copy(pos);
+            markerGroup.add(dot);
+
+            // Create HTML Label
+            const div = document.createElement('div');
+            div.className = 'site-label';
+            div.innerHTML = `<span style="color:${site.color}; margin-right:4px;">●</span>${site.name}`;
+
+            const label = new CSS2DObject(div);
+            // Push label slightly outward normal to surface
+            const outward = pos.clone().normalize();
+            label.position.copy(pos).add(outward.multiplyScalar(0.08));
+            markerGroup.add(label);
+        });
+
+        // --- Wireframe Toggle ---
+        const wireframeBtn = document.getElementById('wireframeBtn');
+        let wireframeActive = false;
+        wireframeBtn.addEventListener('click', () => {
+            wireframeActive = !wireframeActive;
+            moonMat.wireframe = wireframeActive;
+            wireframeBtn.classList.toggle('toggle-active', wireframeActive);
+        });
+
+        // --- Main Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const elapsed = clock.getElapsedTime();
+
+            // Very slow natural rotation of the moon
+            moon.rotation.y += 0.05 * delta;
+
+            // Cinematic Dramatic Twinkling Starfield and Drift
+            stars.rotation.y -= 0.005 * delta;
+            stars.rotation.z = Math.sin(elapsed * 0.1) * 0.05;
+            stars.material.opacity = 0.8 + Math.sin(elapsed * 2.0) * 0.2; // Rhythmic cosmic star pulse
+
+            // Idle auto-rotate camera logic
+            if (autoRotateIdleEnabled) {
+                if (Date.now() - lastInteractionTime > config.idleTimeoutMs) {
+                    controls.autoRotate = true;
+                }
+            }
+
+            controls.update();
+
+            // Zero-G Astronaut Camera Drift (Handheld / Floating Sensation)
+            const driftPace = elapsed * 0.35;
+            camera.position.x += Math.sin(driftPace) * 0.025;
+            camera.position.y += Math.cos(driftPace * 0.8) * 0.025;
+            camera.lookAt(controls.target); // Relock the focus tightly automatically
+
+            // Use EffectComposer instead of standard renderer to get Bloom and Film Textures
+            composer.render();
+            labelRenderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Responsive handling
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>
